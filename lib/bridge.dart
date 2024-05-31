@@ -409,71 +409,50 @@ Future<void> _wrapListByAddress() async {
     print('bridge.wrap.listByAddress address [networkClass] [chainId]');
     return;
   }
-  WrapTokenRequestList list;
-  String toAddress = args[1];
-  var fromAddress;
+  Address fromAddress = emptyAddress;
+
   try {
     fromAddress = Address.parse(args[1]);
   } catch (e) {
+    print('${red('Error!')} Malformed address.');
     /* assume input is an EVM-compatible address */
   }
 
-  if (fromAddress != null) {
-    var blocks = await znnClient.ledger.getAccountBlocksByPage(fromAddress);
-    if (blocks.count! > 0) {
-      List<WrapTokenRequest> list = [];
-      for (var block in blocks.list!) {
-        if (block.toAddress == bridgeAddress && block.data.isNotEmpty) {
-          Function eq = const ListEquality().equals;
-          late AbiFunction f;
-          for (var entry in Definitions.bridge.entries) {
-            if (eq(AbiFunction.extractSignature(entry.encodeSignature()),
-                AbiFunction.extractSignature(block.data))) {
-              f = AbiFunction(entry.name!, entry.inputs!);
-            }
-          }
-          if (f.name == 'WrapToken') {
-            var request = await znnClient.embedded.bridge
-                .getWrapTokenRequestById(block.hash);
-            if (args.length == 4) {
-              int networkClass = int.parse(args[2]);
-              int chainId = int.parse(args[3]);
-              if (request.chainId != chainId ||
-                  request.networkClass != networkClass) {
-                continue;
-              }
-            }
-            list.add(request);
+  var blocks = await znnClient.ledger.getAccountBlocksByPage(fromAddress);
+  if (blocks.count! > 0) {
+    List<WrapTokenRequest> list = [];
+    for (var block in blocks.list!) {
+      if (block.toAddress == bridgeAddress && block.data.isNotEmpty) {
+        Function eq = const ListEquality().equals;
+        late AbiFunction f;
+        for (var entry in Definitions.bridge.entries) {
+          if (eq(AbiFunction.extractSignature(entry.encodeSignature()),
+              AbiFunction.extractSignature(block.data))) {
+            f = AbiFunction(entry.name!, entry.inputs!);
           }
         }
-      }
-      if (list.isNotEmpty) {
-        print('Count: ${list.length}');
-        for (WrapTokenRequest request in list) {
-          await _printWrapTokenRequest(request);
+        if (f.name == 'WrapToken') {
+          var request = await znnClient.embedded.bridge
+              .getWrapTokenRequestById(block.hash);
+          if (args.length == 4) {
+            int networkClass = int.parse(args[2]);
+            int chainId = int.parse(args[3]);
+            if (request.chainId != chainId ||
+                request.networkClass != networkClass) {
+              continue;
+            }
+          }
+          list.add(request);
         }
-      } else {
-        print('No wrap requests found for $fromAddress');
       }
     }
-  } else {
-    if (args.length == 4) {
-      int networkClass = int.parse(args[2]);
-      int chainId = int.parse(args[3]);
-      list = await znnClient.embedded.bridge
-          .getAllWrapTokenRequestsByToAddressNetworkClassAndChainId(
-              toAddress, networkClass, chainId);
-    } else {
-      list = await znnClient.embedded.bridge
-          .getAllWrapTokenRequestsByToAddress(toAddress);
-    }
-    if (list.count > 0) {
-      print('Count: ${list.count}');
-      for (WrapTokenRequest request in list.list) {
+    if (list.isNotEmpty) {
+      print('Count: ${list.length}');
+      for (WrapTokenRequest request in list) {
         await _printWrapTokenRequest(request);
       }
     } else {
-      print('No wrap requests found for $toAddress');
+      print('No wrap requests found for $fromAddress');
     }
   }
 }
@@ -1020,22 +999,23 @@ Future<void> _nominateGuardians() async {
 
   TimeChallengesList list =
       await znnClient.embedded.bridge.getTimeChallengesInfo();
-  TimeChallengeInfo? tc;
+  TimeChallengeInfo? timeChallengeInfo;
 
   if (list.count > 0) {
-    for (var _tc in list.list) {
-      if (_tc.methodName == 'NominateGuardians') {
-        tc = _tc;
+    for (var tc in list.list) {
+      if (tc.methodName == 'NominateGuardians') {
+        timeChallengeInfo = tc;
       }
     }
   }
 
-  if (tc != null && tc.paramsHash != emptyHash) {
+  if (timeChallengeInfo != null && timeChallengeInfo.paramsHash != emptyHash) {
     Momentum frontierMomentum = await znnClient.ledger.getFrontierMomentum();
     SecurityInfo securityInfo =
         await znnClient.embedded.bridge.getSecurityInfo();
 
-    if (tc.challengeStartHeight + securityInfo.administratorDelay >
+    if (timeChallengeInfo.challengeStartHeight +
+            securityInfo.administratorDelay >
         frontierMomentum.height) {
       print('Cannot nominate guardians; wait for time challenge to expire.');
       return;
@@ -1044,7 +1024,7 @@ Future<void> _nominateGuardians() async {
     ByteData bd = combine(guardians);
     Hash paramsHash = Hash.digest(bd.buffer.asUint8List());
 
-    if (tc.paramsHash == paramsHash) {
+    if (timeChallengeInfo.paramsHash == paramsHash) {
       print('Committing guardians ...');
     } else {
       print('Time challenge hash does not match nominated guardians');

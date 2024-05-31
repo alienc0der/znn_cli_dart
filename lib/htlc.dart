@@ -171,9 +171,14 @@ Future<void> _create() async {
   print(
       '  Can be unlocked by $hashLockedAddress with hashlock $hashLock hashtype $hashType');
 
-  AccountBlockTemplate block = await send(znnClient.embedded.htlc
-      .create(token, amount, hashLockedAddress, expirationTime, hashType,
-          keyMaxSize, hashLock.getBytes()));
+  AccountBlockTemplate block = await send(znnClient.embedded.htlc.create(
+      token,
+      amount,
+      hashLockedAddress,
+      expirationTime,
+      hashType,
+      keyMaxSize,
+      hashLock.getBytes()));
 
   print('Submitted htlc with id ${green(block.hash.toString())}');
   print('Done');
@@ -195,7 +200,7 @@ Future<void> _unlock() async {
   HtlcInfo htlc = await _getById(id);
   hashType = htlc.hashType;
 
-  if (!await znnClient.embedded.htlc.getProxyUnlockStatus(htlc.hashLocked) && 
+  if (!await znnClient.embedded.htlc.getProxyUnlockStatus(htlc.hashLocked) &&
       address != htlc.hashLocked) {
     print('${red('Error!')} Cannot unlock htlc. Permission denied');
     return;
@@ -476,9 +481,9 @@ Future<bool> _monitorAsync(
       break;
     }
     var currentTime = (DateTime.now().millisecondsSinceEpoch / 1000).round();
-    List<HtlcInfo> _htlcs = htlcs.toList();
+    List<HtlcInfo> htlcInfoList = htlcs.toList();
 
-    for (var htlc in _htlcs) {
+    for (var htlc in htlcInfoList) {
       // Reclaim any expired timeLocked htlc that is being monitored
       if (htlc.expirationTime <= currentTime) {
         print('Htlc id ${red(htlc.id.toString())} expired');
@@ -498,11 +503,11 @@ Future<bool> _monitorAsync(
         }
       }
 
-      List<HtlcInfo> _waitingToBeReclaimed = waitingToBeReclaimed.toList();
-      List<Hash> _queue = queue.toList();
+      List<HtlcInfo> waitingToBeReclaimed0 = waitingToBeReclaimed.toList();
+      List<Hash> queue0 = queue.toList();
 
       if (queue.isNotEmpty) {
-        for (var hash in _queue) {
+        for (var hash in queue0) {
           // Identify if htlc txs are either 'Unlock' or 'Reclaim'
           var block = await znnClient.ledger.getAccountBlockByHash(hash);
 
@@ -534,7 +539,7 @@ Future<bool> _monitorAsync(
           }
 
           // If 'Unlock', display its preimage
-          for (var htlc in _htlcs) {
+          for (var htlc in htlcInfoList) {
             if (f.name.toString() == 'Unlock') {
               var args = f.decode((block?.data)!);
 
@@ -561,7 +566,7 @@ Future<bool> _monitorAsync(
 
           // If 'Reclaim', inform user that a monitored, expired htlc
           // has been reclaimed by the timeLocked address
-          for (var htlc in _waitingToBeReclaimed) {
+          for (var htlc in waitingToBeReclaimed0) {
             if (f.name.toString() == 'Reclaim') {
               if (block?.address != htlc.timeLocked) {
                 continue;

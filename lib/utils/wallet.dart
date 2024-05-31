@@ -7,8 +7,9 @@ import 'package:znn_ledger_dart/znn_ledger_dart.dart';
 import 'package:znn_sdk_dart/znn_sdk_dart.dart';
 
 Future<Iterable<WalletDefinition>> getWalletDefinitions() async {
-  List<Future<Iterable<WalletDefinition>>> futures =
-      walletManagers.map((manager) => manager.getWalletDefinitions()).toList();
+  List<Future<Iterable<WalletDefinition>>> futures = (await getWalletManagers())
+      .map((manager) => manager.getWalletDefinitions())
+      .toList();
 
   List<Iterable<WalletDefinition>> listOfDefinitions =
       await Future.wait(futures);
@@ -87,7 +88,7 @@ Future<void> unlockWallet(ArgResults argResult) async {
   }
 
   try {
-    for (var walletManager in walletManagers) {
+    for (var walletManager in (await getWalletManagers())) {
       if (await walletManager.supportsWallet(walletDefinition)) {
         znnClient.defaultKeyStorePath = walletDefinition;
         znnClient.keyStoreManager = walletManager;

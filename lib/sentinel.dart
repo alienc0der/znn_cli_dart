@@ -89,7 +89,8 @@ Future<void> _register() async {
   AccountInfo accountInfo =
       await znnClient.ledger.getAccountInfoByAddress(address);
   var depositedQsr = await znnClient.embedded.sentinel.getDepositedQsr(address);
-  print('You have ${AmountUtils.addDecimals(depositedQsr, coinDecimals)} ${blue('QSR')} deposited for the Sentinel');
+  print(
+      'You have ${AmountUtils.addDecimals(depositedQsr, coinDecimals)} ${blue('QSR')} deposited for the Sentinel');
   if (accountInfo.znn()! < sentinelRegisterZnnAmount ||
       accountInfo.qsr()! < sentinelRegisterQsrAmount) {
     print('Cannot register Sentinel with address ${address.toString()}');
@@ -123,6 +124,7 @@ Future<void> _revoke() async {
     } else {
       print('Error: ${e.toString()}');
     }
+    return null;
   });
 
   if (entry == null) {

@@ -8,7 +8,12 @@ import 'package:path/path.dart' as path;
 import 'package:znn_cli_dart/global.dart';
 import 'package:znn_sdk_dart/znn_sdk_dart.dart';
 
-final znndConfigPath = File(path.join(znnDefaultDirectory.path, 'config.json'));
+Future<File> getZnndConfigPath() async {
+  final znndConfigPath =
+      File(path.join((await znnDefaultMainDirectory).path, 'config.json'));
+
+  return znndConfigPath;
+}
 
 String formatJSON(Map<dynamic, dynamic> j) {
   var spaces = ' ' * 4;
@@ -31,17 +36,17 @@ Map<dynamic, dynamic> parseJSON(String fileName) {
   }
 }
 
-Map<dynamic, dynamic> parseConfig() {
-  if (znndConfigPath.existsSync()) {
-    return json.decode(znndConfigPath.readAsStringSync());
+Future<Map> parseConfig() async {
+  if ((await getZnndConfigPath()).existsSync()) {
+    return json.decode((await getZnndConfigPath()).readAsStringSync());
   } else {
     return <dynamic, dynamic>{};
   }
 }
 
-bool writeConfig(Map<dynamic, dynamic> config) {
+Future<bool> writeConfig(Map<dynamic, dynamic> config) async {
   try {
-    znndConfigPath.writeAsStringSync(formatJSON(config));
+    (await getZnndConfigPath()).writeAsStringSync(formatJSON(config));
   } on FileSystemException {
     return false;
   }

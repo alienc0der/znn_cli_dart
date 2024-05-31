@@ -500,10 +500,10 @@ Future<void> _adminFunctions() async {
       verbose
           ? print('Description: Configure token tuples that can be staked\n'
               'Example: '
-              '${green('\'{\"tokenStandards\": [\"zts1nmfd7dkgqtwh6h9a3wu4xm\", \"zts1q5dh77csuncy6aetwd05gn\"],'
-                  '\"znnPercentages\": [5000,5000],'
-                  '\"qsrPercentages\": [5000,5000],'
-                  '\"minAmounts\": [\"10\",\"1000\"]}\'')}')
+              '${green('\'{"tokenStandards": ["zts1nmfd7dkgqtwh6h9a3wu4xm", "zts1q5dh77csuncy6aetwd05gn"],'
+                  '"znnPercentages": [5000,5000],'
+                  '"qsrPercentages": [5000,5000],'
+                  '"minAmounts": ["10","1000"]}\'')}')
           : null;
       await _setTokenTuple();
       return;
@@ -765,22 +765,23 @@ Future<bool> _checkTimeChallenge(
 ) async {
   TimeChallengesList list =
       await znnClient.embedded.liquidity.getTimeChallengesInfo();
-  TimeChallengeInfo? tc;
+  TimeChallengeInfo? timeChallengeInfo;
 
   if (list.count > 0) {
-    for (var _tc in list.list) {
-      if (_tc.methodName == methodName) {
-        tc = _tc;
+    for (var timeChallenge in list.list) {
+      if (timeChallenge.methodName == methodName) {
+        timeChallengeInfo = timeChallenge;
       }
     }
   }
 
-  if (tc != null && tc.paramsHash != emptyHash) {
+  if (timeChallengeInfo != null && timeChallengeInfo.paramsHash != emptyHash) {
     Momentum frontierMomentum = await znnClient.ledger.getFrontierMomentum();
     SecurityInfo securityInfo =
         await znnClient.embedded.liquidity.getSecurityInfo();
 
-    if (tc.challengeStartHeight + securityInfo.administratorDelay >
+    if (timeChallengeInfo.challengeStartHeight +
+            securityInfo.administratorDelay >
         frontierMomentum.height) {
       print('Cannot proceed; wait for time challenge to expire.');
       return false;
@@ -789,7 +790,7 @@ Future<bool> _checkTimeChallenge(
     ByteData bd = combine(params);
     Hash paramsHash = Hash.digest(bd.buffer.asUint8List());
 
-    if (tc.paramsHash != paramsHash) {
+    if (timeChallengeInfo.paramsHash != paramsHash) {
       print('Time challenge mismatch');
       if (!confirm('Are you sure you want to proceed?', defaultValue: false)) {
         return false;

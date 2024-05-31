@@ -78,7 +78,8 @@ Future<void> _createNew() async {
 
   String? name;
   if (args.length == 3) name = args[2];
-
+  final KeyStoreManager keyStoreManager =
+      KeyStoreManager(walletPath: await znnDefaultWalletDirectory);
   var walletDef = await keyStoreManager.createNew(args[1], name);
   print('keyStore ${green('successfully')} created: ${walletDef.walletName}');
 }
@@ -96,6 +97,8 @@ Future<void> _createFromMnemonic() async {
 
   String? name;
   if (args.length == 4) name = args[3];
+  final KeyStoreManager keyStoreManager =
+      KeyStoreManager(walletPath: await znnDefaultWalletDirectory);
   var walletDef =
       await keyStoreManager.createFromMnemonic(args[1], args[2], name);
   print(

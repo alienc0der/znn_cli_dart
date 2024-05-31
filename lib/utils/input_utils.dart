@@ -1,7 +1,5 @@
 import 'dart:io';
 
-import 'package:dcli/dcli.dart';
-
 String? enterPassphrase() {
   print('Insert passphrase:');
   stdin.echoMode = false;

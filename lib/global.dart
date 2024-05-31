@@ -6,17 +6,25 @@ const znnCli = 'znn-cli';
 const znnCliVersion = '0.0.7';
 
 final Zenon znnClient = Zenon();
-final KeyStoreManager keyStoreManager =
-    KeyStoreManager(walletPath: znnDefaultWalletDirectory);
-final List<WalletManager> walletManagers = [
-  keyStoreManager,
-  LedgerWalletManager()
-];
+
+Future<KeyStoreManager> getKeyStoreManager() async {
+  final KeyStoreManager keyStoreManager =
+      KeyStoreManager(walletPath: await znnDefaultWalletDirectory);
+
+  return keyStoreManager;
+}
+
+Future<List<WalletManager>> getWalletManagers() async {
+  List<WalletManager> walletManagers = [];
+  walletManagers = [await getKeyStoreManager(), LedgerWalletManager()];
+  return walletManagers;
+}
+
 late final WalletDefinition walletDefinition;
 late final WalletOptions? walletOptions;
 late final int accountIndex;
 late final Address address;
-late final List<String> args;
+List<String> args = [];
 bool verbose = false;
 
 List<String> commandsWithWallet = [

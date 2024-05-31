@@ -59,7 +59,7 @@ void handleFlags(ArgResults argResult) {
 
   if (argResult.wasParsed('verbose')) {
     log.hierarchicalLoggingEnabled = true;
-    logger.level = Level.ALL;
+    logger.level = log.Level.ALL;
     verbose = true;
   }
 
