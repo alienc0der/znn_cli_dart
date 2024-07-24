@@ -26,14 +26,13 @@ Future<Iterable<WalletDefinition>> getWalletDefinitions() async {
 }
 
 Future<void> unlockWallet(ArgResults argResult) async {
-  var walletDefinitions = await getWalletDefinitions();
-
+  Iterable<WalletDefinition> walletDefinitions = await getWalletDefinitions();
   if (walletDefinitions.isEmpty) {
     // Make sure at least one wallet exists
     print('${red('Error!')} No wallets founds');
     exit(-1);
   } else if (argResult.wasParsed('keyStore')) {
-    String? walletName;
+    String walletName = argResult['keyStore'];
 
     if (argResult['keyStore'] == "nanos" ||
         argResult['keyStore'] == "nanosp" ||
@@ -48,7 +47,7 @@ Future<void> unlockWallet(ArgResults argResult) async {
     }
 
     if (!walletDefinitions
-        .any((x) => x.walletName.toLowerCase() == walletName!.toLowerCase())) {
+        .any((x) => x.walletName.toLowerCase() == walletName.toLowerCase())) {
       print(
           '${red('Error!')} The wallet ${argResult['keyStore']} does not exist');
       exit(-1);
@@ -56,7 +55,7 @@ Future<void> unlockWallet(ArgResults argResult) async {
 
     // Use user provided wallet: make sure it exists
     walletDefinition = walletDefinitions.firstWhere(
-        (x) => x.walletName.toLowerCase() == walletName!.toLowerCase());
+        (x) => x.walletName.toLowerCase() == walletName.toLowerCase());
   } else if (walletDefinitions.length == 1) {
     // In case there is just one wallet, use it by default
     print(

@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:dcli/dcli.dart';
+import 'package:hex/hex.dart';
 import 'package:path/path.dart' as path;
 import 'package:znn_cli_dart/global.dart';
 import 'package:znn_sdk_dart/znn_sdk_dart.dart';
@@ -77,6 +78,8 @@ Future<Token> getToken(TokenStandard tokenStandard) async {
     throw ('${red('Error!')} $tokenStandard does not exist');
   }
 }
+
+List<int> decodeHexString(String input) => HEX.decode(input);
 
 Function getColor(TokenStandard tokenStandard) {
   switch (tokenStandard.toString()) {

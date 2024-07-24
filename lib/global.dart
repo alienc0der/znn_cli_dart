@@ -62,6 +62,7 @@ List<String> commandsWithWallet = [
   'wallet.dumpMnemonic',
   'wallet.deriveAddresses',
   'wallet.export',
+  'wallet.sign',
   'az.donate',
   'spork.create',
   'spork.activate',
@@ -98,6 +99,7 @@ List<String> commandsWithoutWallet = [
   'wallet.createNew',
   'wallet.createFromMnemonic',
   'wallet.list',
+  'wallet.verify',
   'spork.list',
   'htlc.get',
   'htlc.inspect',
@@ -138,6 +140,8 @@ List<String> commandsWithoutConnection = [
   'wallet.deriveAddresses',
   'wallet.export',
   'createHash',
+  'wallet.sign',
+  'wallet.verify'
 ];
 
 List<String> adminCommands = [

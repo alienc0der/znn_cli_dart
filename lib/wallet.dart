@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:dcli/dcli.dart' hide verbose;
@@ -14,6 +15,8 @@ void walletMenu() {
   print('    wallet.dumpMnemonic');
   print('    wallet.deriveAddresses start end');
   print('    wallet.export filePath');
+  print('    wallet.sign message');
+  print('    wallet.verify message signature publicKey');
 }
 
 Future<void> walletFunctions() async {
@@ -51,6 +54,14 @@ Future<void> walletFunctions() async {
       verbose ? print('Description: Export wallet') : null;
       await _export();
       return;
+
+    case 'sign':
+      verbose ? print('Description: Sign message') : null;
+      await _sign();
+
+    case 'verify':
+      verbose ? print('Description: Verify signature') : null;
+      await _verify();
 
     default:
       invalidCommand();
@@ -149,4 +160,58 @@ Future<void> _export() async {
   var walletDef = znnClient.defaultKeyStorePath as KeyStoreDefinition;
   await File(walletDef.walletId).copy(args[1]);
   print('Done! Check the current directory');
+}
+
+class Signature {
+  String signature;
+  String publicKey;
+
+  Signature(this.signature, this.publicKey);
+}
+
+Future<void> _sign() async {
+  if (args.length != 4) {
+    print('Incorrect number of arguments. Expected:');
+    print('wallet.sign message');
+    return;
+  }
+  String message = args[1];
+  final KeyStoreManager keyStoreManager =
+      KeyStoreManager(walletPath: await znnDefaultWalletDirectory);
+  Wallet wallet =
+      await keyStoreManager.getWallet(walletDefinition, walletOptions);
+  WalletAccount walletAccount = await wallet.getAccount();
+  List<int> publicKey = await walletAccount.getPublicKey();
+  List<int> signature = await walletAccount.sign(
+    Uint8List.fromList(
+      message.codeUnits,
+    ),
+  );
+  print(
+      'Public key: ${Signature(BytesUtils.bytesToHex(signature), BytesUtils.bytesToHex(publicKey)).publicKey}');
+  print(
+      'Signature: ${Signature(BytesUtils.bytesToHex(signature), BytesUtils.bytesToHex(publicKey)).signature}');
+}
+
+Future<void> _verify() async {
+  if (args.length != 4) {
+    print('Incorrect number of arguments. Expected:');
+    print('wallet.verify message signature publicKey');
+    return;
+  }
+  String message = args[1];
+  String signature = args[2];
+  String pubKey = args[3];
+
+  bool verified = await Crypto.verify(
+    decodeHexString(signature),
+    Uint8List.fromList(message.codeUnits),
+    decodeHexString(pubKey),
+  );
+
+  if (verified) {
+    print('Signature ${green('valid')}');
+  } else {
+    print('Signature ${red('invalid')}');
+  }
 }

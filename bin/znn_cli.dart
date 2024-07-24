@@ -6,8 +6,7 @@ import 'package:znn_sdk_dart/znn_sdk_dart.dart';
 
 Future<int> main(List<String> arguments) async {
   final ArgParser argParser = parseArgs();
-  final argResult = argParser.parse(args);
-  args = argResult.rest;
+  final argResult = argParser.parse(arguments);
 
   args = arguments;
 
