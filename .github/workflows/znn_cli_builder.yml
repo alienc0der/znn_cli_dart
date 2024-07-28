@@ -13,28 +13,36 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-12]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
-            output-name: znn-cli-linux
-          - os: macOS-12
-            output-name: znn-cli-macos
+          - os: macos-latest
           - os: windows-latest
-            output-name: znn-cli-windows.exe
     steps:
           - name: Checkout
-            uses: actions/checkout@v3
-          - name: Setup Dart SDK
-            uses: dart-lang/setup-dart@v1.5.0
+            uses: actions/checkout@v4
+          - name: Flutter action
+            uses: subosito/flutter-action@v2.16.0
           - name: Install dependencies
             run: dart pub get
-          - name: Build znn-cli
-            run: dart compile exe znn-cli.dart -o ${{ matrix.output-name }}
+          - name:  Build znn-cli
+            run:   |
+                   if [ "$RUNNER_OS" == "Linux" ]; then
+                        make linux
+                   elif [ "$RUNNER_OS" == "Windows" ]; then
+                        make windows
+                   elif [ "$RUNNER_OS" == "macOS" ]; then
+                        make macos
+                   else
+                        echo "$RUNNER_OS not supported"
+                        exit 1
+                   fi
+            shell: bash
           - name: Upload artifacts
-            uses: actions/upload-artifact@v3
+            uses: actions/upload-artifact@v4
             with:
               name: ${{ matrix.os }}-artifacts
-              path: ${{ matrix.output-name }}
+              path: ./build/
   make-release:
         needs: [build-matrix]
         runs-on: ubuntu-latest
@@ -43,72 +51,41 @@ jobs:
             run: |
               sudo apt update
               sudo apt upgrade -y
-              sudo apt install -y zip unzip wget
+              sudo apt install -y zip unzip
           - name: Prepare releases directory
             run: mkdir releases
           - name: Download Linux artifacts
-            uses: actions/download-artifact@v3
+            uses: actions/download-artifact@v4
             with:
               name: ubuntu-latest-artifacts
+              path: ./znn-cli-linux-amd64
           - name: Download macOS artifacts
-            uses: actions/download-artifact@v3
+            uses: actions/download-artifact@v4
             with:
-              name: macOS-12-artifacts
+              name: macos-latest-artifacts
+              path: ./znn-cli-macos-arm64
           - name: Download Windows artifacts
-            uses: actions/download-artifact@v3
+            uses: actions/download-artifact@v4
             with:
               name: windows-latest-artifacts
-          - name: Download libpow_links
-            uses: robinraju/release-downloader@v1.8
-            with:
-              repository: "zenon-network/znn-pow-links-cpp"
-              latest: true
-          - name: Download libargon2
-            uses: robinraju/release-downloader@v1.8
-            with:
-              repository: "zenon-network/argon2_ffi"
-              latest: true
-          - name: Download libledger_ffi
-            uses: robinraju/release-downloader@v1.8
-            with:
-              repository: "hypercore-one/ledger_ffi_rs"
-              latest: true
-          - name: Package Linux binaries
+              path: ./znn-cli-windows-amd64
+          - name: Package binaries
             run: |
-              mv znn-cli-linux releases/znn-cli
-              chmod +x releases/znn-cli
-              unzip -j libpow_links-linux-amd64.zip -d releases/
-              unzip -j libargon2_ffi-linux-amd64.zip -d releases/
-              unzip -j libledger_ffi-linux-amd64.zip -d releases/
-              zip -jr releases/znn-cli-linux-amd64.zip releases/znn-cli releases/libpow_links.so releases/libargon2_ffi_plugin.so releases/libledger_ffi.so
-              rm releases/znn-cli releases/libpow_links.so releases/libargon2_ffi_plugin.so releases/libledger_ffi.so
-          - name: Package Windows binaries
-            run: |
-              mv znn-cli-windows.exe releases/znn-cli.exe
-              chmod +x releases/znn-cli.exe
-              unzip -j libpow_links-windows-amd64.zip -d releases/
-              unzip -j libargon2_ffi-windows-amd64.zip -d releases/
-              unzip -j libledger_ffi-windows-amd64.zip -d releases/
-              rm releases/generator.exe
-              zip -jr releases/znn-cli-windows-amd64.zip releases/znn-cli.exe releases/libpow_links.dll releases/argon2_ffi_plugin.dll releases/libledger_ffi.dll
-              rm releases/znn-cli.exe releases/libpow_links.dll releases/argon2_ffi_plugin.dll releases/libledger_ffi.dll
-          - name: Package macOS binaries
-            run: |
-              mv znn-cli-macos releases/znn-cli
-              chmod +x releases/znn-cli
-              unzip -j libpow_links-darwin-universal.zip -d releases/
-              unzip -j libargon2_ffi-darwin-universal.zip -d releases/
-              unzip -j libledger_ffi-darwin-universal.zip -d releases/
-              rm releases/generator
-              zip -jr releases/znn-cli-darwin-universal.zip releases/znn-cli releases/libpow_links.dylib releases/libargon2_ffi.dylib releases/libledger_ffi.dylib
-              rm releases/znn-cli releases/libpow_links.dylib releases/libargon2_ffi.dylib releases/libledger_ffi.dylib
+              chmod +x ./znn-cli-linux-amd64/*
+              chmod +x ./znn-cli-macos-arm64/*
+              zip -r ./znn-cli-windows-amd64.zip ./znn-cli-windows-amd64/*
+              zip -r ./znn-cli-linux-amd64.zip ./znn-cli-linux-amd64/*
+              zip -r ./znn-cli-macos-arm64.zip ./znn-cli-macos-arm64/*
+              mv znn-cli-windows-amd64.zip releases/
+              mv znn-cli-linux-amd64.zip releases/
+              mv znn-cli-macos-arm64.zip releases/
           - name: Generate checksums
             run: |
               cd releases/
               echo $(sha256sum *)
               echo $(sha256sum *) >> SHA256CHECKSUMS.txt
           - name: Upload files to a GitHub release
-            uses: svenstaro/upload-release-action@2.6.1
+            uses: svenstaro/upload-release-action@2.9.0
             with:
               repo_token: ${{ secrets.GITHUB_TOKEN }}
               file: releases/*
